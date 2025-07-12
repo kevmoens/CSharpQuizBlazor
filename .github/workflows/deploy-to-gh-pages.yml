@@ -19,16 +19,18 @@ jobs:
 
       - name: Publish Blazor WebAssembly app
         run: |
-          dotnet publish CSharpQuizBlazor/CSharpQuizBlazor.csproj -c Release -o release --nologo
-          cp CSharpQuizBlazor/wwwroot/index.html release/index.html
+          dotnet publish CSharpQuizBlazor/CSharpQuizBlazor.csproj -p:GHPages=true -o:public -c:Release
 
-      - name: Add .nojekyll file
-        run: |
-          touch release/.nojekyll
+
+      - name: Change base-tag in index.html from / to CSharpQuizBlazor
+        run:  |
+          find . -name "index.html" | while read htmlFile; do
+              sed -i 's/<base href="\/"/<base href="\/CSharpQuizBlazor\/"/g' $htmlFile
+          done
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./release/wwwroot
-          publish_branch: gh-pages
+          publish_dir: public/wwwroot
+          force_orphan: true
