@@ -30,7 +30,7 @@ jobs:
 
       - name: Add .nojekyll file
         run: |
-          touch release/.nojekyll
+          touch wwwroot/.nojekyll
           
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
