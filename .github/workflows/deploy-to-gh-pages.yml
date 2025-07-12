@@ -28,10 +28,6 @@ jobs:
               sed -i 's/<base href="\/"/<base href="\/CSharpQuizBlazor\/"/g' $htmlFile
           done
 
-      - name: Add .nojekyll file
-        run: |
-          touch wwwroot/.nojekyll
-          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
