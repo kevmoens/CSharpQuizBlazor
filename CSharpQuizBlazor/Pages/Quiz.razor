@@ -1,0 +1,219 @@
+@page "/quiz"
+@using CSharpQuizBlazor.Models
+@inject NavigationManager Navigation
+
+<PageTitle>C# Quiz</PageTitle>
+
+@if (!quizStarted)
+{
+    <div class="container d-flex flex-column align-items-center justify-content-center min-vh-100">
+        <div class="card shadow-lg p-4" style="max-width: 400px; width: 100%;">
+            <h2 class="mb-3 text-center text-primary">Welcome to the C# Quiz!</h2>
+            <div class="mb-3">
+                <label for="nameInput" class="form-label">Enter your name to start:</label>
+                <input id="nameInput" class="form-control form-control-lg" @bind="userName" @bind:event="oninput" placeholder="Your Name" />
+            </div>
+            <button class="btn btn-success w-100 btn-lg" @onclick="StartQuiz" disabled="@(string.IsNullOrWhiteSpace(userName))">
+                <i class="bi bi-play-circle me-2"></i>Start Quiz
+            </button>
+        </div>
+    </div>
+}
+else if (!quizFinished)
+{
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-info text-dark fs-5">@userName</span>
+                    <span class="badge bg-secondary fs-6">Question @(@currentQuestionIndex + 1) of @questions.Count</span>
+                </div>
+                <div class="progress mb-4" style="height: 1.5rem;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: @(100 * (currentQuestionIndex + 1) / questions.Count)%" aria-valuenow="@(currentQuestionIndex + 1)" aria-valuemin="0" aria-valuemax="@questions.Count">
+                        @((currentQuestionIndex + 1) * 100 / questions.Count)%
+                    </div>
+                </div>
+                <div class="card shadow mb-4 animate__animated animate__fadeIn">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4 text-primary">@questions[@currentQuestionIndex].Text</h4>
+                        <div class="btn-group-vertical w-100 gap-2">
+                            @for (int i = 0; i < questions[@currentQuestionIndex].Choices.Count; i++)
+                            {
+                                int idx = i;
+                                <button class="btn btn-outline-primary btn-lg text-start px-4 py-2 fw-semibold @(selectedAnswers[currentQuestionIndex] == idx ? "active bg-primary text-white" : null)" @onclick="() => SelectAnswer(idx)">
+                                    <span class="me-2">@((char)('A' + idx)).</span> @questions[@currentQuestionIndex].Choices[idx]
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-3">
+                    <button class="btn btn-outline-secondary btn-lg px-4" @onclick="PreviousQuestion" disabled="@(currentQuestionIndex == 0)">
+                        <i class="bi bi-arrow-left"></i> Previous
+                    </button>
+                    <button class="btn btn-success btn-lg px-4" @onclick="NextOrFinish" disabled="@(selectedAnswers[currentQuestionIndex] == null)">
+                        @(currentQuestionIndex == questions.Count - 1 ? "Finish" : "Next") <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container d-flex flex-column align-items-center justify-content-center min-vh-100">
+        <div class="card shadow-lg p-4 text-center" style="max-width: 500px; width: 100%;">
+            <h2 class="mb-3 text-success">Quiz Results</h2>
+            <p class="fs-4 mb-2"><b>@userName</b>, you scored <span class="badge bg-primary fs-3">@score</span> out of <b>@questions.Count</b>.</p>
+            <h4 class="mb-4">Your Level: <span class="badge bg-warning text-dark fs-4">@GetLevel(score)</span></h4>
+            <button class="btn btn-outline-primary btn-lg w-100" @onclick="Restart">
+                <i class="bi bi-arrow-repeat me-2"></i>Try Again
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private string userName;
+    private bool quizStarted = false;
+    private bool quizFinished = false;
+    private int currentQuestionIndex = 0;
+    private List<Question> questions;
+    private List<int?> selectedAnswers;
+    private int score = 0;
+
+    protected override void OnInitialized()
+    {
+        questions = GetQuestions();
+        ShuffleQuestions();
+        selectedAnswers = new List<int?>(new int?[questions.Count]);
+    }
+
+    private void StartQuiz()
+    {
+        quizStarted = true;
+        quizFinished = false;
+        currentQuestionIndex = 0;
+        questions = GetQuestions();
+        ShuffleQuestions();
+        selectedAnswers = new List<int?>(new int?[questions.Count]);
+        score = 0;
+    }
+
+    private void SelectAnswer(int choiceIndex)
+    {
+        selectedAnswers[currentQuestionIndex] = choiceIndex;
+    }
+
+    private void NextOrFinish()
+    {
+        if (currentQuestionIndex < questions.Count - 1)
+        {
+            currentQuestionIndex++;
+            StateHasChanged();
+        }
+        else
+        {
+            FinishQuiz();
+        }
+    }
+
+    private void PreviousQuestion()
+    {
+        if (currentQuestionIndex > 0)
+        {
+            currentQuestionIndex--;
+            StateHasChanged();
+        }
+    }
+
+    private void FinishQuiz()
+    {
+        score = 0;
+        for (int i = 0; i < questions.Count; i++)
+        {
+            if (selectedAnswers[i] == questions[i].CorrectChoiceIndex)
+            {
+                score++;
+            }
+        }
+        quizFinished = true;
+        StateHasChanged();
+    }
+
+    private void Restart()
+    {
+        quizStarted = false;
+        quizFinished = false;
+        userName = string.Empty;
+        currentQuestionIndex = 0;
+        questions = GetQuestions();
+        ShuffleQuestions();
+        selectedAnswers = new List<int?>(new int?[questions.Count]);
+        score = 0;
+        StateHasChanged();
+    }
+
+    private void ShuffleQuestions()
+    {
+        var rng = new Random();
+        questions = questions.OrderBy(_ => rng.Next()).ToList();
+    }
+
+    private string GetLevel(int score)
+    {
+        if (score < 10) return "Entry Level Developer";
+        if (score < 20) return "Mid Level Developer";
+        if (score < 30) return "Senior Developer";
+        if (score < 38) return ".NET Architect";
+        return "C# God";
+    }
+
+    private List<Question> GetQuestions()
+    {
+        return new List<Question>
+        {
+            new Question { Text = "What is the correct way to do structured logging?", Choices = new List<string>{"logger.Trace(\"The current value is {currentValue}\", currentValue);","logger.Trace(\"The current value is \" + currentValue.ToString());","logger.Trace($\"The current value is {currentValue}\");","None of the above"}, CorrectChoiceIndex = 0 },
+            new Question { Text = "Which keyword is used to define a method that can be overridden in a derived class?", Choices = new List<string>{"override","virtual","abstract","sealed"}, CorrectChoiceIndex = 1 },
+            // new Question { Text = "Which of the following is a value type in C#?", Choices = new List<string>{"string","int","object","Array"}, CorrectChoiceIndex = 1 },
+            // new Question { Text = "What does the 'static' keyword mean in C#?", Choices = new List<string>{"The member belongs to the type itself","The member cannot be accessed","The member is read-only","The member is virtual"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which of these is NOT a valid access modifier in C#?", Choices = new List<string>{"public","protected","internal","package"}, CorrectChoiceIndex = 3 },
+            // new Question { Text = "What is the default value of a bool variable in C#?", Choices = new List<string>{"true","false","null","0"}, CorrectChoiceIndex = 1 },
+            // new Question { Text = "Which interface must be implemented to support iteration with foreach?", Choices = new List<string>{"IEnumerable","IEnumerator","ICollection","IDisposable"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "What is the size of an int in C#?", Choices = new List<string>{"2 bytes","4 bytes","8 bytes","Depends on platform"}, CorrectChoiceIndex = 1 },
+            // new Question { Text = "Which operator is used to handle null values in C#?", Choices = new List<string>{"??","?.","!","::"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "What is the output of: Console.WriteLine(5/2);", Choices = new List<string>{"2.5","2","2.0","Error"}, CorrectChoiceIndex = 1 },
+            // new Question { Text = "Which of the following is used to define a constant in C#?", Choices = new List<string>{"const","static","readonly","final"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which collection guarantees unique elements?", Choices = new List<string>{"List","Array","HashSet","Queue"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "What is the base class of all classes in C#?", Choices = new List<string>{"System.Object","System.Base","System.Class","System.Root"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which statement is used to handle exceptions?", Choices = new List<string>{"try-catch","if-else","switch","goto"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which of the following is NOT a reference type?", Choices = new List<string>{"string","class","struct","delegate"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "What does the 'using' statement do?", Choices = new List<string>{"Imports a namespace","Manages resource disposal","Defines a block scope","Declares a variable"}, CorrectChoiceIndex = 1 },
+            // new Question { Text = "Which keyword is used to inherit a class in C#?", Choices = new List<string>{"inherits","extends","base",":"}, CorrectChoiceIndex = 3 },
+            // new Question { Text = "Which of the following is a correct way to declare an array?", Choices = new List<string>{"int[] arr = new int[5];","int arr = new int[5];","array<int> arr = new array<int>(5);","int arr[] = 5;"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "What is the output of: Console.WriteLine(\"Hello\".Length);", Choices = new List<string>{"4","5","6","Error"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which of the following is used for method overloading?", Choices = new List<string>{"Same method name, different parameters","Same method name, same parameters","Different method names","None of the above"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which of the following is NOT a loop in C#?", Choices = new List<string>{"for","foreach","repeat","while"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which keyword is used to prevent a class from being inherited?", Choices = new List<string>{"sealed","static","final","private"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which of the following is NOT a valid delegate type?", Choices = new List<string>{"Action","Func","Predicate","Event"}, CorrectChoiceIndex = 3 },
+            // new Question { Text = "What is the output of: Console.WriteLine(true && false);", Choices = new List<string>{"true","false","1","0"}, CorrectChoiceIndex = 1 },
+            // new Question { Text = "Which of the following is used to define an interface?", Choices = new List<string>{"interface","abstract","class","struct"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which of the following is NOT a valid way to declare a string?", Choices = new List<string>{"string s = \"abc\";","String s = \"abc\";","var s = \"abc\";","char s = \"abc\";"}, CorrectChoiceIndex = 3 },
+            // new Question { Text = "Which of the following is NOT a valid event handler signature?", Choices = new List<string>{"void Handler(object sender, EventArgs e)","int Handler(object sender, EventArgs e)","void Handler()","void Handler(object, EventArgs)"}, CorrectChoiceIndex = 1 },
+            // new Question { Text = "Which of the following is NOT a valid LINQ method?", Choices = new List<string>{"Select","Where","OrderBy","Sort"}, CorrectChoiceIndex = 3 },
+            // new Question { Text = "Which of the following is used to define a property?", Choices = new List<string>{"get; set;","define; set;","property; get;","set; get;"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which of the following is NOT a valid numeric type in C#?", Choices = new List<string>{"int","float","decimal","real"}, CorrectChoiceIndex = 3 },
+            // new Question { Text = "Which of the following is used to implement encapsulation?", Choices = new List<string>{"Access modifiers","Inheritance","Polymorphism","Abstraction"}, CorrectChoiceIndex = 0 },
+            // new Question { Text = "Which of the following is NOT a valid way to create an object?", Choices = new List<string>{"new MyClass()","MyClass obj = new MyClass();","MyClass obj;","MyClass obj = MyClass();"}, CorrectChoiceIndex = 3 },
+            // new Question { Text = "Which of the following is NOT a valid type of constructor?", Choices = new List<string>{"Default","Parameterized","Copy","Static"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which of the following is NOT a valid way to handle null values?", Choices = new List<string>{"??","?.","!","??="}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which of the following is NOT a valid way to declare a variable?", Choices = new List<string>{"int x = 5;","var x = 5;","x = 5;","double x = 5;"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which of the following is NOT a valid way to define a method?", Choices = new List<string>{"void MyMethod() {}","int MyMethod() { return 0; }","MyMethod() void {}","public void MyMethod() {}"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which of the following is NOT a valid way to use the 'this' keyword?", Choices = new List<string>{"this.field = value;","this();","this = value;","this.Method();"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which of the following is NOT a valid way to use the 'base' keyword?", Choices = new List<string>{"base.Method();","base.field = value;","base();","base = value;"}, CorrectChoiceIndex = 3 },
+            // new Question { Text = "Which of the following is NOT a valid way to use the 'new' keyword?", Choices = new List<string>{"new MyClass();","new int[5];","new = value;","new List<int>();"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which of the following is NOT a valid way to use the 'override' keyword?", Choices = new List<string>{"override void Method() {}","override int Property { get; set; }","override class MyClass {}","override string ToString() {}"}, CorrectChoiceIndex = 2 },
+            // new Question { Text = "Which of the following is NOT a valid way to use the 'abstract' keyword?", Choices = new List<string>{"abstract class MyClass {}","abstract void Method();","abstract int Property { get; set; }","abstract new MyClass();"}, CorrectChoiceIndex = 3 },
+        };
+    }
+}
