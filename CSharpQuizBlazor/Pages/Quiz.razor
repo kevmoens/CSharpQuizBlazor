@@ -40,7 +40,7 @@ else if (!quizFinished)
                             @for (int i = 0; i < questions[@currentQuestionIndex].Choices.Count; i++)
                             {
                                 int idx = i;
-                                <button class="btn btn-outline-primary btn-lg text-start px-4 py-2 fw-semibold @(selectedAnswers[currentQuestionIndex] == idx ? "active bg-primary text-white" : null)" @onclick="() => SelectAnswer(idx)">
+                                <button class="btn btn-outline-primary btn-lg text-start px-4 py-2 fw-semibold @(selectedAnswers[currentQuestionIndex] == idx ? "active bg-primary text-white" : null)" @onclick="() => SelectAnswer(idx)" disabled="@(currentQuestionIndex != maxQuestionReached)">
                                     <span class="me-2">@((char)('A' + idx)).</span> @((MarkupString)@questions[@currentQuestionIndex].Choices[idx].Replace("\n", "<br />").Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;"))
                                 </button>
                             }
@@ -96,6 +96,7 @@ else
     private int score = 0;
     private bool showFeedback = false;
     private bool lastAnswerCorrect = false;
+    private int maxQuestionReached = 0;
 
     protected override void OnInitialized()
     {
@@ -113,12 +114,16 @@ else
         ShuffleQuestions();
         selectedAnswers = new List<int?>(new int?[questions.Count]);
         score = 0;
+        maxQuestionReached = 0;
     }
 
     private void SelectAnswer(int choiceIndex)
     {
-        selectedAnswers[currentQuestionIndex] = choiceIndex;
-        showFeedback = false;
+        if (currentQuestionIndex == maxQuestionReached)
+        {
+            selectedAnswers[currentQuestionIndex] = choiceIndex;
+            showFeedback = false;
+        }
     }
 
     private void NextOrFinish()
@@ -139,6 +144,10 @@ else
         if (currentQuestionIndex < questions.Count - 1)
         {
             currentQuestionIndex++;
+            if (currentQuestionIndex > maxQuestionReached)
+            {
+                maxQuestionReached = currentQuestionIndex;
+            }
             StateHasChanged();
         }
         else
