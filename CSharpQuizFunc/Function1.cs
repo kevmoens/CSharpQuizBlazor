@@ -1,13 +1,14 @@
+using Azure;
+using Azure.Data.Tables;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using static CSharpQuizFunc.Function1;
 using static System.Net.WebRequestMethods;
 
 namespace CSharpQuizFunc
@@ -28,34 +29,44 @@ namespace CSharpQuizFunc
 			//name = name ?? data?.name;
 			try
 			{
-				// Cosmos DB connection settings (use environment variables or configuration in production)
-				string endpointUri = "https://csharpquiz.documents.azure.com:443/";
-				string primaryKey = Environment.GetEnvironmentVariable("CosmosPrimaryKey");
-				string databaseId = "quiz";
-				string containerId = "quiz";
+
+				//enable below code for storage access with entra id auth            
+				string connectionString =  Environment.GetEnvironmentVariable("QuizTableStorageConnectionString");
+				string tableName = "quiz";
+
+				// Create a TableClient
+				TableClient tableClient = new TableClient(connectionString, tableName);
 
 
-				CosmosClient cosmosClient = new CosmosClient(endpointUri, primaryKey);
-				Container container = cosmosClient.GetContainer(databaseId, containerId);
-				string id = container.Database.Id;
-				var item = new
+				// Create an entity
+				var entity = new MyEntity
 				{
-					id = Guid.NewGuid().ToString(),
-					Id = Guid.NewGuid().ToString(),
-					Content = requestBody,
-					timestamp = DateTime.UtcNow
+					PartitionKey = "Quiz",
+					RowKey = Guid.NewGuid().ToString(),
+					Data = requestBody
 				};
 
-				await container.CreateItemAsync(item, new PartitionKey(item.Id));
+				// Add the entity to the table
+				await tableClient.AddEntityAsync(entity);
+
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine($"Error: {ex.Message}");
 			}
 
-				string responseMessage = "Success";
+			string responseMessage = "Success";
 
 			return new OkObjectResult(responseMessage);
 		}
+	}
+
+	public class MyEntity : ITableEntity
+	{
+		public string PartitionKey { get; set; }
+		public string RowKey { get; set; }
+		public string Data { get; set; }
+		public ETag ETag { get; set; } = ETag.All;
+		public DateTimeOffset? Timestamp { get; set; }
 	}
 }
