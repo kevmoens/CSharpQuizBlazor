@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpQuizBlazor", "CSharpQ
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpQuizFunc", "CSharpQuizFunc\CSharpQuizFunc.csproj", "{2D69F407-8406-4CED-A1BC-8DF05779ECDA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpQuizTest", "CSharpQuizTest\CSharpQuizTest.csproj", "{66F03A0D-91F7-4D19-A19A-58427AA6CD08}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{2D69F407-8406-4CED-A1BC-8DF05779ECDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D69F407-8406-4CED-A1BC-8DF05779ECDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D69F407-8406-4CED-A1BC-8DF05779ECDA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66F03A0D-91F7-4D19-A19A-58427AA6CD08}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66F03A0D-91F7-4D19-A19A-58427AA6CD08}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66F03A0D-91F7-4D19-A19A-58427AA6CD08}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66F03A0D-91F7-4D19-A19A-58427AA6CD08}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
