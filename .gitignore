@@ -12,3 +12,4 @@ obj/
 *.DS_Store
 Thumbs.db
 CSharpQuizBlazor/Properties/launchSettings.json
+packages/*

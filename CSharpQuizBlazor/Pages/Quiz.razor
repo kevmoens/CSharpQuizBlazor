@@ -126,7 +126,7 @@ else
         }
     }
 
-    private void NextOrFinish()
+    private async void NextOrFinish()
     {
         if (!showFeedback)
         {
@@ -152,7 +152,7 @@ else
         }
         else
         {
-            FinishQuiz();
+            await FinishQuiz();
         }
     }
 
@@ -165,18 +165,52 @@ else
         }
     }
 
-    private void FinishQuiz()
+    private async Task FinishQuiz()
     {
         score = 0;
+        var wrongQuestions = new List<string>();
         for (int i = 0; i < questions.Count; i++)
         {
             if (selectedAnswers[i] == questions[i].CorrectChoiceIndex)
             {
                 score++;
             }
+            else
+            {
+                wrongQuestions.Add(questions[i].Text);
+            }
         }
         quizFinished = true;
+        await PostQuizResultAsync();
         StateHasChanged();
+    }
+
+    private async Task PostQuizResultAsync()
+    {
+        var dto = new QuizResultDto
+        {
+            UserName = userName,
+            Score = score,
+            WrongQuestions = new List<string>(questions.Where((q, i) => selectedAnswers[i] != q.CorrectChoiceIndex).Select(q => q.Text))
+        };
+        try
+        {
+
+
+            // Use relative path for API endpoint
+            using HttpClient client = new HttpClient();
+            string contentType = "application/json";
+            string url = "https://csharpquizfunc20250713230151.azurewebsites.net/api/Function1";
+            
+            using StringContent content = new StringContent(System.Text.Json.JsonSerializer.Serialize(dto), System.Text.Encoding.UTF8, contentType);
+            var response = await client.PostAsync(url, content);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            // Optionally handle/log error
+            Console.WriteLine(ex.Message);
+        }
     }
 
     private void Restart()
