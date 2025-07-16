@@ -3,13 +3,13 @@
 @using CSharpQuizBlazor.Services
 @inject NavigationManager Navigation
 
-<PageTitle>C# Quiz</PageTitle>
+<PageTitle>Lake Co Quiz</PageTitle>
 
 @if (!engine.QuizStarted)
 {
     <div class="container d-flex flex-column align-items-center justify-content-center min-vh-100">
         <div class="card shadow-lg p-4" style="max-width: 400px; width: 100%;">
-            <h2 class="mb-3 text-center text-primary">Welcome to the C# Quiz!</h2>
+            <h2 class="mb-3 text-center text-primary">Welcome to the Lake Co Quiz!</h2>
             <div class="mb-3">
                 <label for="nameInput" class="form-label">Enter your name to start:</label>
                 <input id="nameInput" class="form-control form-control-lg" @bind="userName" @bind:event="oninput" placeholder="Your Name" />
