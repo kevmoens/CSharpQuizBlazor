@@ -157,6 +157,7 @@ else
         {
             UserName = engine.UserName,
             Score = engine.Score,
+            Test = selectedTest,
             WrongQuestions = new List<string>(engine.Questions.Where((q, i) => engine.SelectedAnswers[i] != q.CorrectChoiceIndex).Select(q => q.Text))
         };
         try
