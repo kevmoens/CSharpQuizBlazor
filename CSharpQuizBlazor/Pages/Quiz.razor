@@ -13,6 +13,12 @@
             <div class="mb-3">
                 <label for="nameInput" class="form-label">Enter your name to start:</label>
                 <input id="nameInput" class="form-control form-control-lg" @bind="userName" @bind:event="oninput" placeholder="Your Name" />
+
+                <label for="testSelect" class="form-label">Select a test:</label>
+                <select id="testSelect" class="form-control form-control-lg" @bind="selectedTest">
+                    <option value="C%23">C#</option>
+                    <option value="SQL">SQL</option>
+                </select>
             </div>
             <button class="btn btn-success w-100 btn-lg" @onclick="StartQuiz" disabled="@(string.IsNullOrWhiteSpace(userName))">
                 <i class="bi bi-play-circle me-2"></i>Start Quiz
@@ -20,7 +26,7 @@
         </div>
     </div>
 }
-else if (!engine.QuizFinished)
+else if (!engine.QuizFinished && engine.Questions?.Count > 0)
 {
     <div class="container py-4">
         <div class="row justify-content-center">
@@ -41,7 +47,7 @@ else if (!engine.QuizFinished)
                             @for (int i = 0; i < engine.Questions[engine.CurrentQuestionIndex].Choices.Count; i++)
                             {
                                 int idx = i;
-                                <button class="btn btn-outline-primary btn-lg text-start px-4 py-2 fw-semibold @(engine.SelectedAnswers[engine.CurrentQuestionIndex] == idx ? "active bg-primary text-white" : null)" @onclick="() => SelectAnswer(idx)" disabled="@(engine.CurrentQuestionIndex != engine.MaxQuestionReached)">
+                                <button class="btn btn-outline-primary btn-lg text-start px-4 py-2 fw-semibold @(engine.SelectedAnswers[engine.CurrentQuestionIndex] == idx ? "active bg-primary text-white" : null)" @onclick="() => SelectAnswer(idx)" disabled="@(engine.CurrentQuestionIndex != engine.MaxQuestionReached || showFeedback)">
                                     <span class="me-2">@((char)('A' + idx)).</span> @((MarkupString)@engine.Questions[engine.CurrentQuestionIndex].Choices[idx].Replace("\n", "<br />").Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;"))
                                 </button>
                             }
@@ -89,13 +95,14 @@ else
 
 @code {
     private QuizEngine engine = new QuizEngine();
-    private string userName;
+    private string userName = string.Empty;
     private bool showFeedback = false;
     private bool lastAnswerCorrect = false;
+    private string selectedTest = "C%23";
 
-    private void StartQuiz()
+    private async void StartQuiz()
     {
-        engine.StartQuiz(userName);
+        await engine.StartQuiz(userName, selectedTest);
         showFeedback = false;
         lastAnswerCorrect = false;
         StateHasChanged();
@@ -156,7 +163,7 @@ else
         {
             using HttpClient client = new HttpClient();
             string contentType = "application/json";
-            string url = "https://csharpquizfunc20250713230151.azurewebsites.net/api/Function1";
+            string url = "https://csharpquizfunc20250713230151.azurewebsites.net/api/Results";
             using StringContent content = new StringContent(System.Text.Json.JsonSerializer.Serialize(dto), System.Text.Encoding.UTF8, contentType);
             var response = await client.PostAsync(url, content);
             response.EnsureSuccessStatusCode();
@@ -178,10 +185,10 @@ else
 
     private string GetLevel(int score)
     {
-        if (score < 10) return "Entry Level Developer";
-        if (score < 20) return "Mid Level Developer";
-        if (score < 30) return "Senior Developer";
-        if (score < 38) return ".NET Architect";
-        return "C# God";
+        if (score < (engine.Questions.Count * .25)) return "Entry Level Developer";
+        if (score < (engine.Questions.Count * .5)) return "Mid Level Developer";
+        if (score < (engine.Questions.Count * .75)) return "Senior Developer";
+        if (score < (engine.Questions.Count * .9)) return ".NET Architect";
+        return $"{selectedTest} God";
     }
 }

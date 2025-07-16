@@ -6,10 +6,10 @@ namespace CSharpQuizTest
     public class QuizEngineTests
     {
         [Fact]
-        public void StartQuiz_InitializesQuizCorrectly()
+        public async Task StartQuiz_InitializesQuizCorrectly()
         {
             var engine = new QuizEngine();
-            engine.StartQuiz("TestUser");
+            await engine.StartQuiz("TestUser", "SQL");
             Assert.True(engine.QuizStarted);
             Assert.False(engine.QuizFinished);
             Assert.Equal("TestUser", engine.UserName);
@@ -18,41 +18,45 @@ namespace CSharpQuizTest
         }
 
         [Fact]
-        public void SelectAnswer_SetsSelectedAnswer()
+        public async Task SelectAnswer_SetsSelectedAnswer()
         {
             var engine = new QuizEngine();
-            engine.StartQuiz("User");
+            await engine.StartQuiz("User", "SQL");
             engine.SelectAnswer(2);
             Assert.Equal(2, engine.SelectedAnswers[0]);
         }
 
         [Fact]
-        public void NextOrFinish_MovesToNextQuestionOrFinishes()
+        public async Task NextOrFinish_MovesToNextQuestionOrFinishes()
         {
             var engine = new QuizEngine();
-            engine.StartQuiz("User");
+            await engine.StartQuiz("User", "SQL");
             // Only 1 question in GetQuestions, so should finish
-            var finished = engine.NextOrFinish();
+            bool finished = false;
+            while (!finished)
+            {
+                finished = engine.NextOrFinish();
+			}
             Assert.True(finished);
             Assert.True(engine.QuizFinished);
         }
 
         [Fact]
-        public void FinishQuiz_CalculatesScoreCorrectly()
+        public async Task FinishQuiz_CalculatesScoreCorrectly()
         {
             var engine = new QuizEngine();
-            engine.StartQuiz("User");
+            await engine.StartQuiz("User", "SQL");
             // Correct answer for first question is 0
-            engine.SelectAnswer(0);
+            engine.SelectAnswer(engine.Questions.First().CorrectChoiceIndex);
             engine.FinishQuiz();
             Assert.Equal(1, engine.Score);
         }
 
         [Fact]
-        public void Restart_ResetsQuizState()
+        public async Task Restart_ResetsQuizState()
         {
             var engine = new QuizEngine();
-            engine.StartQuiz("User");
+            await engine.StartQuiz("User", "SQL");
             engine.SelectAnswer(1);
             engine.FinishQuiz();
             engine.Restart();

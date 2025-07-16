@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using CSharpQuizBlazor.Models;
+using System.Collections.Generic;
 using System.Linq;
-using CSharpQuizBlazor.Models;
+using System.Net;
 
 namespace CSharpQuizBlazor.Services
 {
 	public class QuizEngine
 	{
-		public string UserName { get; set; }
-		public List<Question> Questions { get; private set; }
+		public string UserName { get; set; } = string.Empty;
+		public List<Question> Questions { get; private set; } = [];
 		public List<int?> SelectedAnswers { get; private set; }
 		public int CurrentQuestionIndex { get; private set; }
 		public int Score { get; private set; }
@@ -17,7 +18,6 @@ namespace CSharpQuizBlazor.Services
 
 		public QuizEngine()
 		{
-			Questions = GetQuestions();
 			ShuffleQuestions();
 			SelectedAnswers = new List<int?>(new int?[Questions.Count]);
 			CurrentQuestionIndex = 0;
@@ -27,17 +27,36 @@ namespace CSharpQuizBlazor.Services
 			MaxQuestionReached = 0;
 		}
 
-		public void StartQuiz(string userName)
+		public async Task<bool> StartQuiz(string userName,string test)
 		{
 			UserName = userName;
 			QuizStarted = true;
 			QuizFinished = false;
 			CurrentQuestionIndex = 0;
-			Questions = GetQuestions();
+
+			try
+			{
+				using HttpClient client = new HttpClient();
+				string url = "https://csharpquizfunc20250713230151.azurewebsites.net/api/GetTestQuestions?name=" + WebUtility.UrlEncode(test);
+				var response = await client.GetAsync(url);
+				response.EnsureSuccessStatusCode();
+				string json = await response.Content.ReadAsStringAsync();
+				Quiz? quiz = System.Text.Json.JsonSerializer.Deserialize<Quiz>(json, new System.Text.Json.JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true
+				});
+				Questions = quiz!.Questions;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+				return false;
+			}
 			ShuffleQuestions();
 			SelectedAnswers = new List<int?>(new int?[Questions.Count]);
 			Score = 0;
 			MaxQuestionReached = 0;
+			return true;
 		}
 
 		public void SelectAnswer(int choiceIndex)
@@ -93,7 +112,6 @@ namespace CSharpQuizBlazor.Services
 			QuizFinished = false;
 			UserName = string.Empty;
 			CurrentQuestionIndex = 0;
-			Questions = GetQuestions();
 			ShuffleQuestions();
 			SelectedAnswers = new List<int?>(new int?[Questions.Count]);
 			Score = 0;
@@ -105,57 +123,6 @@ namespace CSharpQuizBlazor.Services
 			var rng = new System.Random();
 			Questions = Questions.OrderBy(_ => rng.Next()).ToList();
 		}
-
-		private List<Question> GetQuestions()
-		{
-			return new List<Question>
-			{
-				new Question { Text = "What is the correct way to do structured logging?", Choices = new List<string>{"logger.Trace(\"The current value is {currentValue}\", currentValue);","logger.Trace(\"The current value is \" + currentValue.ToString());","logger.Trace($\"The current value is {currentValue}\");","None of the above"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "Which keyword is used to define a method that can be overridden in a derived class?", Choices = new List<string>{"override","virtual","abstract","sealed"}, CorrectChoiceIndex = 1 },
-				new Question { Text = "Which keyword or class type in C# should you use to handle locking in a multi-threaded piece of code?", Choices = new List<string>{"lock","SyncLock","SemaphoreSlim","None of these"}, CorrectChoiceIndex = 2 },
-				new Question { Text = "How can you stop a class from being inherited by another class?", Choices = new List<string>{"locked","sealed","NotInherited","protected"}, CorrectChoiceIndex = 1 },
-				new Question { Text = "What does the 'static' keyword mean in C#?", Choices = new List<string>{"The member belongs to the type itself","The member cannot be accessed","The member is read-only","The member is virtual"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "When concatenating two string \"NotNull\" + null what is the output?", Choices = new List<string>{"\"NotNull\"","null","Compile Error","Runtime Error"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "If you add 1 to int.MaxValue what happens?", Choices = new List<string>{"Compile Error","Runtime Error","0", "int.MinValue"}, CorrectChoiceIndex = 3 },
-				new Question { Text = "Why should you try to avoid using the var keyword?", Choices = new List<string>{"Compile Errors","Makes variables dynamically typed","It makes it hard to tell what type a variable might be","None of the above"}, CorrectChoiceIndex = 2 },
-				new Question { Text = "When comparing two tuples (string Name, int Age) and (string FullName, uint FullAge) what happens?", Choices = new List<string>{"it compares Name and FullName and Age and FullAge","the answer is always false", "Compile time error","Runtime error"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "What is the size of an int in C#?", Choices = new List<string>{"2 bytes","4 bytes","8 bytes","Depends on platform"}, CorrectChoiceIndex = 1 },
-				new Question { Text = "What type is int?", Choices = new List<string>{"Reference Type","Value Type","Primitive Type","Special Type"}, CorrectChoiceIndex = 1 },
-				new Question { Text = "What type is string?", Choices = new List<string>{"Reference Type","Value Type","Primitive Type","Special Type"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "What type is System.Object?", Choices = new List<string>{"Reference Type","Value Type","Primitive Type","Special Type"}, CorrectChoiceIndex = 2 },
-				new Question { Text = "What type is a custom class?", Choices = new List<string>{"Reference Type","Value Type","Primitive Type","Special Type"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "What is a guard clause?", Choices = new List<string>{"A keyword that restricts variable access in a class.","A method that “guards” other methods by encrypting them.","A programming practice where a method exits early if a certain condition is met, preventing unnecessary code execution.","A special type of loop that runs only once before exiting."}, CorrectChoiceIndex = 2 },
-				new Question { Text = "What is the base class of all classes in C#?", Choices = new List<string>{"System.Object","System.Base","System.Class","System.Root"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "What is the difference between Func and Action delegates in C#?", Choices = new List<string>{"Func is a keyword, while Action is a class.","Func returns a value, while Action does not return a value.","Func is used for asynchronous methods, while Action is used for synchronous methods.","Func is used for event handling, while Action is used for method invocation."}, CorrectChoiceIndex = 1 },
-				new Question { Text = "What is a Predicate delegate in C#?", Choices = new List<string>{"A delegate that represents a method returning a void value.","A delegate that represents a method returning a string value.","A delegate that represents a method returning an integer value.","A delegate that represents a method returning a boolean value."}, CorrectChoiceIndex = 3 },
-				new Question { Text = "Which of the following will block the current thread (which is typically seen as bad) until all provided tasks have completed?", Choices = new List<string>{"Task.WhenAny","Task.WhenAll","Task.WaitAll","Task.UntilComplete"}, CorrectChoiceIndex = 2 },
-				new Question { Text = "What is the difference between using throw and throw ex?", Choices = new List<string>{"throw is used for re-throwing exceptions, while throw ex is used for logging exceptions.","throw can only be used in try blocks, while throw ex can only be used in catch blocks.","throw resets the stack trace, while throw ex preserves the original stack trace.","throw preserves the original stack trace of the exception, while throw ex resets the stack trace."}, CorrectChoiceIndex = 3 },
-				new Question { Text = "What is boxing in C#?", Choices = new List<string>{"Converting a value type to a reference type by wrapping it in an object.","Converting a reference type to a value type.","Storing a value type in a stack instead of a heap.","Converting a string to an integer."}, CorrectChoiceIndex = 0 },
-				new Question { Text = "How are generics commonly used in C#?", Choices = new List<string>{"To improve runtime performance by optimizing memory allocation.","To define methods that accept a variable number of arguments.","To automatically convert value types to reference types during runtime.","To create reusable classes and methods that work with any data type while ensuring type safety."}, CorrectChoiceIndex = 3 },
-				new Question { Text = "What keyword leaves only a loop immediately?", Choices = new List<string>{"return","exit","break","leave"}, CorrectChoiceIndex = 2 },
-				new Question { Text = "What is the primary purpose of the 'using' statement in C#?", Choices = new List<string>{"To define namespaces","To ensure proper disposal of resources","To declare variables","To handle exceptions"}, CorrectChoiceIndex = 1 },
-				new Question { Text = "How does the 'yield' keyword relate to the IEnumerable interface in C#?", Choices = new List<string>{"It is used to declare an IEnumerable variable.","It is used to implement the IEnumerable interface by generating elements one at a time.","It is used to handle exceptions in IEnumerable.","It is used to convert an IEnumerable to a List."}, CorrectChoiceIndex = 1 },
-				new Question { Text = "Which of the following code snippets correctly uses reflection to invoke a private method named 'Calculate' from a class instance in C#?", Choices = new List<string>{"typeof(MyClass).GetMethod(\"Calculate\").Invoke(instance, null);","typeof(MyClass).GetMethod(\"Calculate\", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(instance, null);","typeof(MyClass).GetMethod(\"Calculate\", BindingFlags.Public | BindingFlags.Static).Invoke(instance, null);","typeof(MyClass).GetMethod(\"Calculate\", BindingFlags.Static).Invoke(instance, null);"}, CorrectChoiceIndex = 1 },
-				new Question { Text = "What does the 'protected' access modifier in C# allow?", Choices = new List<string>{"Access only within the same class","Access only within the same assembly","Access within the same class and derived classes","Access from any class"}, CorrectChoiceIndex = 2 },
-				new Question { Text = "What is the purpose of the 'abstract' keyword in C#?", Choices = new List<string>{"To define a class that cannot be instantiated and may contain abstract methods","To declare a variable that cannot be changed","To specify a method that must be static","To create a class that can only be inherited"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "In C#, how can a derived class access a protected member of its base class?", Choices = new List<string>{"By creating a new instance of the base class","By declaring the member as 'public' in the base class","By using the 'this' keyword followed by the member name","By using the 'base' keyword followed by the member name"}, CorrectChoiceIndex = 3 },
-				new Question { Text = "What is the key difference between casting using (𝑡𝑦𝑝𝑒) before an object and using 'as type' in C#?", Choices = new List<string>{"(𝑡𝑦𝑝𝑒) performs a runtime check and throws an exception if the cast fails, while 'as type' returns null if the cast fails.","(𝑡𝑦𝑝𝑒) can only be used with value types, while 'as type' can only be used with reference types.","(𝑡𝑦𝑝𝑒) is faster than 'as type' because it skips runtime checks.","(𝑡𝑦𝑝𝑒) converts the object to the specified type, while 'as type' creates a new instance of the specified type."}, CorrectChoiceIndex = 0 },
-				new Question { Text = "What is the purpose of preprocessor directives in C#?", Choices = new List<string>{"To execute code before the main program runs","To provide instructions to the compiler for conditional compilation or other tasks","To define runtime variables for the program","To optimize the performance of the application"}, CorrectChoiceIndex = 1 },
-				new Question { Text = "Which of the following is used for method overloading?", Choices = new List<string>{"Same method name, different parameters","Same method name, same parameters","Different method names","None of the above"}, CorrectChoiceIndex = 0 },
-				new Question { Text = "Which of the following is NOT a valid LINQ method?", Choices = new List<string>{"Select","Where","OrderBy","Sort"}, CorrectChoiceIndex = 3 },
-				new Question { Text = "Which of the following statements about immutability in C# is true?", Choices = new List<string>{"Immutable objects can have their fields modified after creation as long as they're private.","Using the readonly keyword on a field ensures that the object it refers to is immutable.","Structs in C# are always immutable by default.","A class is considered immutable if all of its fields are declared readonly and there are no setters for its properties."}, CorrectChoiceIndex = 3 },
-				new Question { Text = "Are string objects in C# immutable?", Choices = new List<string>{"No, strings can be modified directly using string methods.","No, but strings become immutable if marked with the const keyword.","Yes, but only if the string is declared as readonly.","Yes, once created, a string cannot be changed."}, CorrectChoiceIndex = 3 },
-				new Question { Text = "Which of the following scenarios is the best fit for using a HashSet<string> instead of a Dictionary<string, int> in C#?", Choices = new List<string>{"You need to sort a list of unique keys and retrieve associated values.","You need to map user names to their corresponding user IDs.","You need to count how many times each word appears in a list of strings.", "You need to check if a list contains duplicate values and ensure each value is stored only once."}, CorrectChoiceIndex = 3 },
-				new Question { Text = "Which of the following is the name of the .NET compiler platform that enables code analysis, refactoring, and exposes C# and VB compilers as APIs?", Choices = new List<string>{"NuGet","MSBuild","Roslyn","Mono"}, CorrectChoiceIndex = 2 },
-				new Question { Text = "Which of the following best describes the difference between asynchronous programming and parallel programming in C#?", Choices = new List<string>{"Asynchronous programming runs code on multiple cores, while parallel programming waits for I/O tasks to complete.","Asynchronous programming is used to handle I/O-bound tasks without blocking threads, while parallel programming is used for CPU-bound tasks by running computations on multiple threads.","Parallel programming uses async and await to manage background tasks, while asynchronous programming uses Parallel.For to divide workloads.","There is no difference — both are used to perform operations simultaneously and are interchangeable."}, CorrectChoiceIndex = 1 },
-				new Question { Text = "Which of the following methods best adheres to Clean Code principles such as clarity, single responsibility, and proper naming?", Choices = new List<string>{
-					"public void DoThings(User u)\n{\n\tu.Login();\n\tSave(u);\n\tEmail(u.Email);\n}\n",
-					"public void Handle(User u)\n{\n\tif (u.IsValid())\n\t{\n\t\tStore(u);\n\t\tAlert(u.Email);\n\t}\n}",
-					"public void X(User a)\n{\n\ta.Check();\n\tDB(a);\n\tMail(a.e);\n}",
-					"public void Process(User user)\n{\n\tuser.Authenticate();\n\tUpdateUserRecord(user);\n\tNotifyUserByEmail(user);\n}"}
-				, CorrectChoiceIndex = 3},
-				new Question { Text = "You are designing a set of classes in a C# application that manages various types of printers. All printers can print documents, but some can also scan or fax. You want to ensure maximum flexibility, avoid tight coupling, and make unit testing easier. What is the most appropriate design approach?", Choices = new List<string>{"Use inheritance to create subclasses like InkjetPrinter, LaserPrinter, and MultifunctionPrinter that extend a Printer base class and override or add methods as needed.","Use a static utility class with Print(), Scan(), and Fax() methods to be shared across all printer types.","Use a single abstract class Printer with all methods (Print(), Scan(), Fax()) defined, and let all derived classes inherit whether they use the methods or not.","Use composition by creating smaller interfaces or components such as IPrint, IScan, and IFax, and compose them into classes like MultifunctionPrinter."}, CorrectChoiceIndex = 3 },
-			};
-		}
+		
 	}
 }
